@@ -15,6 +15,8 @@ namespace DotNetCoreExamples
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Add(new ServiceDescriptor(typeof(ILog), new MyConsoleLogger()));
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -25,10 +27,50 @@ namespace DotNetCoreExamples
                 app.UseDeveloperExceptionPage();
             }
 
+            //app.Run(async (context) =>
+            //{
+            //    await context.Response.WriteAsync("Hello World!");
+            //});
+            //app.UseMiddleware< MyCustomMiddleWare>();
+            app.UseMyCustomMiddleWare();
+            app.UseStaticFiles();
+            app.UseMvc(routes =>
+            {
+                routes.MapRoute(
+                    name: "default",
+                    template: "{controller=Home}/{action=Index}/{id?}");
+            });
+            app.Use(async (context, next) =>
+            {
+                await context.Response.WriteAsync("Hello World From 1st Middleware!");
+
+                await next();
+            });
+
             app.Run(async (context) =>
             {
-                await context.Response.WriteAsync("Hello World!");
+                await context.Response.WriteAsync("Hello World From 2nd Middleware");
             });
         }
     }
+
+    public interface ILog
+    {
+        void info(string str);
+    }
+
+    class MyConsoleLogger : ILog
+    {
+        public void info(string str)
+        {
+            Console.WriteLine(str);
+        }
+    }
+    //public static class MyCustomMiddleWareExtensions
+    //{
+    //    public static IApplicationBuilder UseMyCustomMiddleWare(this IApplicationBuilder builder)
+    //    {
+    //        return builder.UseMiddleware<MyCustomMiddleWare>();
+    //    }
+    //}
 }
